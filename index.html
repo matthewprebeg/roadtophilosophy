@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Wikipedia Philosophy Game</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+<div class="app">
+  <div class="sidebar" id="sidebar">
+    <div class="mobile-grip" onclick="toggleMobileDrawer()"><div class="mobile-grip-bar"></div></div>
+
+    <div class="panel app-header" id="app-header" onclick="toggleHeader()">
+      <div class="header-top">
+        <div>
+          <h1>All Roads Lead to Philosophy</h1>
+          <p>Wikipedia link chain visualizer</p>
+        </div>
+        <span class="header-arrow">▾</span>
+      </div>
+      <div class="header-body">
+        <p class="header-desc">Almost every Wikipedia article leads to Philosophy if you keep clicking the first link. This tool traces those chains and maps them as a live network — showing where paths converge, diverge, and overlap.</p>
+      </div>
+    </div>
+
+    <div class="panel perf-panel">
+      <button class="perf-btn" id="perf-btn" onclick="togglePerfMode()">
+        <span class="perf-dot" id="perf-dot"></span>
+        <span id="perf-label">Performance mode</span>
+      </button>
+    </div>
+
+    <div class="panel input-panel">
+      <label>Article URL or title</label>
+      <div class="input-row">
+        <input type="text" id="wiki-input" placeholder="e.g. en.wikipedia.org/wiki/Jazz" />
+        <button class="run-btn" id="run-btn" onclick="startChain()">Run</button>
+      </div>
+    </div>
+
+    <div class="panel chains-panel">
+      <div class="chains-scroll" id="chains-list">
+        <div class="chains-empty">
+          Paste a Wikipedia link<br>and trace its path to Philosophy
+        </div>
+      </div>
+      <div class="stats-bar" id="stats-bar" style="display:none">
+        <div class="stat">
+          <span class="stat-label">Chains</span>
+          <span class="stat-val" id="stat-chains">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Nodes</span>
+          <span class="stat-val" id="stat-nodes">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Shared</span>
+          <span class="stat-val" id="stat-shared">0</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Mobile bottom bar (hidden on desktop) -->
+  <div class="mobile-bar" id="mobile-bar">
+    <button class="mobile-perf-btn" id="mobile-perf-btn" onclick="togglePerfMode()">
+      <span class="perf-dot" id="mob-perf-dot"></span>
+    </button>
+    <input type="text" id="mobile-input" class="mobile-input" placeholder="Article title or URL"
+           onkeydown="if(event.key==='Enter')mobileRun()" />
+    <button class="run-btn mobile-run-btn" id="mobile-run-btn" onclick="mobileRun()">Run</button>
+    <button class="mobile-drawer-toggle" id="mobile-drawer-toggle" onclick="toggleMobileDrawer()">
+      <span class="mobile-chain-badge" id="mobile-chain-badge"></span>
+      <svg class="mobile-chevron" id="mobile-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9.5L7 4.5L12 9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div class="graph-area" id="graph-area">
+    <div class="graph-empty" id="graph-empty"></div>
+    <svg id="graph-svg" style="display:none"></svg>
+    <div class="legend" id="legend" style="display:none">
+      <div class="legend-item">
+        <svg width="16" height="16" viewBox="-8 -8 16 16"><polygon points="6,0 3,5.2 -3,5.2 -6,0 -3,-5.2 3,-5.2" fill="#F7D00A" stroke="#000" stroke-width="1.5"/></svg>
+        Philosophy
+      </div>
+      <div class="legend-item">
+        <svg width="16" height="16" viewBox="-8 -8 16 16"><rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1.5"/></svg>
+        Shared article
+      </div>
+      <div class="legend-item">
+        <svg width="16" height="16" viewBox="-8 -8 16 16"><circle r="5" fill="#fff" stroke="#000" stroke-width="1.5"/></svg>
+        Single article
+      </div>
+    </div>
+    <div class="graph-controls">
+      <button class="ctrl-btn" title="Zoom in" onclick="zoomBy(1.3)">+</button>
+      <button class="ctrl-btn" title="Zoom out" onclick="zoomBy(0.75)">−</button>
+      <button class="ctrl-btn" title="Reset view" onclick="resetZoom()">↺</button>
+      <button class="ctrl-btn zen-open-btn" title="Fullscreen performance mode" onclick="enterZenMode()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/>
+        </svg>
+      </button>
+    </div>
+    <button class="zen-exit-btn" id="zen-exit-btn" onclick="exitZenMode()" title="Exit fullscreen">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <path d="M5 1H1v4M9 1h4v4M1 9v4h4M13 9v4H9"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
