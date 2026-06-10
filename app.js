@@ -75,6 +75,7 @@ async function fetchFirstLink(title) {
   const data = await res.json();
   if (data.error) throw new Error(data.error.info || `Unknown API error for "${title}"`);
 
+  const resolvedTitle = data.parse.title;
   const doc = new DOMParser().parseFromString(data.parse.text['*'], 'text/html');
 
   doc.querySelectorAll([
@@ -96,11 +97,11 @@ async function fetchFirstLink(title) {
     const paragraphs = node.tagName === 'P' ? [node] : node.querySelectorAll('p');
     for (const p of paragraphs) {
       if (p.textContent.trim().length < 5) continue;
-      const link = findFirstLinkOutsideParens(p, title);
-      if (link) return link;
+      const link = findFirstLinkOutsideParens(p, resolvedTitle);
+      if (link) return { next: link, resolvedTitle };
     }
   }
-  return null;
+  return { next: null, resolvedTitle };
 }
 
 // Walks the paragraph DOM, tracking parenthesis depth, and returns the first
@@ -397,9 +398,40 @@ async function startChain(auto = false) {
     if (current === PHILOSOPHY) { chain.status = 'done'; break; }
 
     try {
-      const next = await fetchFirstLink(current);
-      if (!next) { chain.status = 'error'; chain.errorMsg = `No valid link found in "${current}"`; break; }
-      current = next;
+      const result = await fetchFirstLink(current);
+
+      // If the page redirected (e.g. "Philosophical" → "Philosophy"), fix up tracking
+      if (result.resolvedTitle !== current) {
+        const oldTitle = current;
+        const newTitle = result.resolvedTitle;
+
+        visited.delete(oldTitle);
+        visited.add(newTitle);
+
+        if (!state.allNodes[newTitle]) {
+          state.allNodes[newTitle] = state.allNodes[oldTitle];
+          state.allNodes[newTitle].isPhilosophy = newTitle === PHILOSOPHY;
+        } else {
+          state.allNodes[newTitle].chains.add(chainId);
+        }
+        delete state.allNodes[oldTitle];
+
+        chain.nodes[chain.nodes.length - 1] = newTitle;
+
+        // Patch edges so D3 can resolve them after the rename
+        state.allEdges.forEach(e => {
+          if (e.target === oldTitle) e.target = newTitle;
+          if (e.source === oldTitle) e.source = newTitle;
+        });
+
+        current = newTitle;
+        updateGraph();
+        updateChainCard(chain);
+        if (current === PHILOSOPHY) { chain.status = 'done'; if (perfMode) chimePhilosophy(); break; }
+      }
+
+      if (!result.next) { chain.status = 'error'; chain.errorMsg = `No valid link found in "${current}"`; break; }
+      current = result.next;
     } catch(e) {
       chain.status = 'error';
       chain.errorMsg = e.message;
